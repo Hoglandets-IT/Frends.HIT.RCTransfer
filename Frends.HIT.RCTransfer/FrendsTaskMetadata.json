@@ -1,0 +1,19 @@
+﻿{
+  "Tasks": [
+    {
+      "TaskMethod": "Frends.HIT.RCTransfer.FrendsInterface.SetRemotes"
+    },
+    {
+      "TaskMethod": "Frends.HIT.RCTransfer.FrendsInterface.CopyFile"
+    },
+    {
+      "TaskMethod": "Frends.HIT.RCTransfer.FrendsInterface.SyncFolders"
+    },
+    {
+      "TaskMethod": "Frends.HIT.RCTransfer.FrendsInterface.RunCommand"
+    },
+    {
+      "TaskMethod": "Frends.HIT.RCTransfer.FrendsInterface.GetEnvironment"
+    }
+  ]
+}
