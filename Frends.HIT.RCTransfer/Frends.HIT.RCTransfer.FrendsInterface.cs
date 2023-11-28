@@ -82,62 +82,106 @@ public static class FrendsInterface
         return await copyReq.MakeRequest(rcli);
     }
 
-    public class EnvironmentResponse
+    public class ErrorLogger
     {
-        public string EnvironmentInput { get; set; }
-        public string EnvironmentGeneral { get; set; }
+        public RemoteFSInterface.RemoteFSServer SourceServer { get; set; }
+        public RemoteFSInterface.RemoteFSServer DestinationServer { get; set; }
+        public RemoteFSInterface.RemoteFSServer.FormattedRemotePath SourcePath { get; set; }
+        public RemoteFSInterface.RemoteFSServer.FormattedRemotePath DestinationPath { get; set; }
+        public string ErrorMessage { get; set; }
     }
 
-    public static EnvironmentResponse GetEnvironment(object testenv)
-    {
-        return new EnvironmentResponse()
-        {
-            EnvironmentInput = JsonConvert.SerializeObject(testenv),
-            EnvironmentGeneral = JsonConvert.SerializeObject(Environment.GetEnvironmentVariables())
-        };
-    }
-
-    public static async Task<Responses.SyncResponse> SyncFolders(
-        [PropertyTab] RemoteFSInterface.RemoteFsTransferInput config, [PropertyTab] RemoteFSInterface.SyncFolderInput input,
-        [PropertyTab] Client.ConnectionSettings connectionSettings)
+    public static async Task<Responses.ListResponse> ListFolder(
+        RemoteFSInterface.RemoteFsServerInput config,
+        RemoteFSInterface.ListInput input, Client.ConnectionSettings connectionSettings
+    )
     {
         var rcli = new Client.RcloneClient(connectionSettings);
-
-        var source = config.GetSource();
-        var destination = config.GetDestination();
-        
-        await Helpers.UpsertRemoteFSRemote(rcli, source);
-        await Helpers.UpsertRemoteFSRemote(rcli, destination);
-        
-        var fmtSource = source.GetFormattedPath(input.SourcePath);
-        var fmtDestination = destination.GetFormattedPath(input.DestinationPath);
-
-        Actions.SyncSync syncReq = new Actions.SyncSync()
+        var errorLogger = new ErrorLogger();
+    
+        try
         {
-            Async = true,
-            SourceRemoteString = Helpers.JoinPath("/", fmtSource.Remote, fmtSource.Path),
-            DestinationRemoteString = Helpers.JoinPath("/", fmtDestination.Remote, fmtDestination.Path),
-            SyncEmptyDirectories = input.CreateEmptyDirectories
-        };
+            var server = config.GetServer();
+            errorLogger.SourceServer = (RemoteFSInterface.RemoteFSServer)Helpers.StripPasswords(server);
+    
+            await Helpers.UpsertRemoteFSRemote(rcli, server);
+    
+            var fmtPaths = server.GetFormattedPath(input.Path);
 
-        var asyncReq = await syncReq.MakeAsyncRequest(rcli);
-        await Task.Delay(2000);
+            Actions.OperationsList req = new Actions.OperationsList()
+            {
+                Remote = fmtPaths.Remote,
+                Path = fmtPaths.Path
+            };
+            
+            var resp = await req.MakeRequest(rcli);
 
-        Responses.JobStatusResponse jobStatus = await rcli.GetJobStatus(asyncReq);
-        while (jobStatus.Finished == false)
-        {
-            await Task.Delay(5000);
-            jobStatus = await rcli.GetJobStatus(asyncReq);
+            return (Responses.ListResponse)resp;
         }
-
-        Responses.SyncResponse resp = new Responses.SyncResponse()
+        catch (Exception er)
         {
-            JobStatus = jobStatus
-        };
+            errorLogger.ErrorMessage = er.Message;
+            throw new Exception(JsonConvert.SerializeObject(errorLogger));
+        }
+    }
+    
+    public static async Task<Responses.SyncResponse> SyncFolders( RemoteFSInterface.RemoteFsTransferInput config, 
+       RemoteFSInterface.SyncFolderInput input, Client.ConnectionSettings connectionSettings)
+    {
+        var rcli = new Client.RcloneClient(connectionSettings);
+        var errorLogger = new ErrorLogger();
 
-        resp.Statistics = await rcli.GetCallStats(asyncReq.JobId);
+        try
+        {
+            var source = config.GetSource();
+            var destination = config.GetDestination();
+
+            errorLogger.SourceServer = (RemoteFSInterface.RemoteFSServer)Helpers.StripPasswords(source);
+            errorLogger.DestinationServer = (RemoteFSInterface.RemoteFSServer)Helpers.StripPasswords(destination);
+            
+            await Helpers.UpsertRemoteFSRemote(rcli, source);
+            await Helpers.UpsertRemoteFSRemote(rcli, destination);
         
-        return resp;
+            var fmtSource = source.GetFormattedPath(input.SourcePath, true);
+            var fmtDestination = destination.GetFormattedPath(input.DestinationPath, true);
+
+            errorLogger.SourcePath = fmtSource;
+            errorLogger.DestinationPath = fmtDestination;
+            
+            Actions.SyncSync syncReq = new Actions.SyncSync()
+            {
+                Async = true,
+                SourceRemoteString = fmtSource.Remote,
+                DestinationRemoteString = fmtDestination.Remote,
+                SyncEmptyDirectories = input.CreateEmptyDirectories
+            };
+
+            var asyncReq = await syncReq.MakeAsyncRequest(rcli);
+            await Task.Delay(2000);
+
+            Responses.JobStatusResponse jobStatus = await rcli.GetJobStatus(asyncReq);
+            while (jobStatus.Finished == false)
+            {
+                await Task.Delay(5000);
+                jobStatus = await rcli.GetJobStatus(asyncReq);
+            }
+
+            Responses.SyncResponse resp = new Responses.SyncResponse()
+            {
+                JobStatus = jobStatus
+            };
+
+            resp.Statistics = await rcli.GetCallStats(asyncReq.JobId);
+        
+            return resp;
+        }
+        catch (Exception er)
+        {
+            errorLogger.ErrorMessage = er.Message;
+            throw new Exception(JsonConvert.SerializeObject(errorLogger));
+        }
+        
+        
     }
     
 

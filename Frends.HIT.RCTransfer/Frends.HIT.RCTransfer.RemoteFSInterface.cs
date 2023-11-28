@@ -112,24 +112,39 @@ public class RemoteFSInterface
             public string Path { get; set; }
         }
 
-        public FormattedRemotePath GetFormattedPath(string path)
+        public FormattedRemotePath GetFormattedPath(string path, bool combined = false)
         {
-            if (ConnectionType.ToLower() == "smb" && path.Contains("$"))
+            FormattedRemotePath returnVal = new FormattedRemotePath(); 
+            
+            if (ConnectionType.ToLower() == "smb" && path.Contains('$'))
             {
                 var splitPath = path.Split("$");
-                
-                return new FormattedRemotePath()
-                {
-                    Remote = GetName() + ":" + splitPath[0] + "$/",
-                    Path = splitPath[1]
-                };
+
+                returnVal.Remote = GetName() + ":" + splitPath[0] + "$/";
+                returnVal.Path = splitPath[1];
+            }
+            else
+            {
+                returnVal.Remote = GetName() + ":";
+                returnVal.Path = path;
             }
 
-            return new FormattedRemotePath()
+            if (!combined)
             {
-                Remote = GetName() + ":",
-                Path = path
-            };
+                return returnVal;
+            }
+            
+            if (ConnectionType.ToLower() == "smb" && path.Contains('$'))
+            {
+                returnVal.Remote = GetName() + ":" + path;
+            }
+            else
+            {
+                returnVal.Remote = returnVal.Remote + returnVal.Path;    
+            }
+
+            return returnVal;
+
         }
         
         public Remotes.RemoteInput GetRemoteInput()
@@ -164,6 +179,17 @@ public class RemoteFSInterface
 
              return input;
          }
+    }
+
+    public class RemoteFsServerInput
+    {
+        [DisplayFormat(DataFormatString = "Expression")]
+        public string Server { get; set; }
+        
+        public RemoteFSServer GetServer()
+        {
+            return JsonConvert.DeserializeObject<RemoteFSServer>(Server);
+        }
     }
     
     public class RemoteFsTransferInput
@@ -204,6 +230,11 @@ public class RemoteFSInterface
         public string SourcePath { get; set; }
         public string DestinationPath { get; set; }
         public bool CreateEmptyDirectories { get; set; }
+    }
+
+    public class ListInput
+    {
+        public string Path { get; set; }
     }
 
 }

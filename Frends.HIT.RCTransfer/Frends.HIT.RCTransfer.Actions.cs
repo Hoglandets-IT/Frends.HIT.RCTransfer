@@ -95,6 +95,11 @@ public static class Actions
         SYNCMOVE,
     }
 
+    // public abstract class MakeRequestBase
+    // {
+    //     public abstract Task<Responses.Response> MakeRequest(Client.RcloneClient client);
+    // }
+
     /// <summary>
     /// The base call object
     /// </summary>
@@ -113,9 +118,9 @@ public static class Actions
         protected string GetPath()
         {
             return "/" + System.Text.RegularExpressions.Regex.Replace(this.GetType().Name, "(?<=.)([A-Z])", "/$0",
-                        System.Text.RegularExpressions.RegexOptions.Compiled).ToLowerInvariant();
+                System.Text.RegularExpressions.RegexOptions.Compiled).ToLowerInvariant();
         }
-        
+
         /// <summary>
         /// Serialize a call to json
         /// </summary>
@@ -131,6 +136,7 @@ public static class Actions
             return JsonConvert.DeserializeObject<Responses.Response>(response);
         }
     }
+
     public class SingleRemoteBase : CallBase
     {
         /// <summary>
@@ -169,14 +175,9 @@ public static class Actions
             }
         }
         
-        /// <summary>
-        /// Make a request
-        /// </summary>
-        /// <param name="client">An Rclone Client instance</param>
-        /// <returns>Responses.Response{}</returns>
-        public async Task<Responses.Response> MakeRequest(Client.RcloneClient client)
+        public new async Task<Responses.Response> MakeRequest(Client.RcloneClient client)
         {
-            var response = await client.Call(this.GetPath(), JsonConvert.SerializeObject(this));
+            var response = await client.Call(this.GetPath(), GetJson());
             return JsonConvert.DeserializeObject<Responses.Response>(response);
         }
     }
@@ -237,16 +238,16 @@ public static class Actions
                 DestinationPath = Strings.Join(split.Skip(1).ToArray(), "");
             }
         }
-
-        public async Task<Responses.Response> MakeRequest(Client.RcloneClient client)
+        
+        public new async Task<Responses.Response> MakeRequest(Client.RcloneClient client)
         {
-            var response = await client.Call(this.GetPath(), JsonConvert.SerializeObject(this));
+            var response = await client.Call(this.GetPath(), GetJson());
             return JsonConvert.DeserializeObject<Responses.Response>(response);
         }
     }
     public class ConfigListremotes : CallBase
     {
-        public async Task<Responses.ListRemoteResponse> MakeRequest(Client.RcloneClient client)
+        public new async Task<Responses.ListRemoteResponse> MakeRequest(Client.RcloneClient client)
         {
             var response = await client.Call(this.GetPath(), JsonConvert.SerializeObject(this));
             return JsonConvert.DeserializeObject<Responses.ListRemoteResponse>(response);
@@ -265,7 +266,7 @@ public static class Actions
 
         [JsonProperty("opt", NullValueHandling = NullValueHandling.Ignore)]
         public Dictionary<string, bool> Options { get; set; }
-        public async Task<Responses.CreateRemoteResponse> MakeRequest(Client.RcloneClient client)
+        public new async Task<Responses.CreateRemoteResponse> MakeRequest(Client.RcloneClient client)
         {
             var response = await client.Call(this.GetPath(), JsonConvert.SerializeObject(this));
             return JsonConvert.DeserializeObject<Responses.CreateRemoteResponse>(response);
@@ -275,7 +276,7 @@ public static class Actions
     {
         [JsonProperty("name", NullValueHandling = NullValueHandling.Ignore)]
         public string Name { get; set; }
-        public async Task<Responses.DeleteRemoteResponse> MakeRequest(Client.RcloneClient client)
+        public new async Task<Responses.DeleteRemoteResponse> MakeRequest(Client.RcloneClient client)
         {
             var response = await client.Call(this.GetPath(), JsonConvert.SerializeObject(this));
             return JsonConvert.DeserializeObject<Responses.DeleteRemoteResponse>(response);
@@ -285,7 +286,7 @@ public static class Actions
     {
         [JsonProperty("name", NullValueHandling = NullValueHandling.Ignore)]
         public string Name { get; set; }
-        public async Task<Responses.GetRemoteResponse> MakeRequest(Client.RcloneClient client)
+        public new async Task<Responses.GetRemoteResponse> MakeRequest(Client.RcloneClient client)
         {
             var response = await client.Call(this.GetPath(), JsonConvert.SerializeObject(this));
             return JsonConvert.DeserializeObject<Responses.GetRemoteResponse>(response);
@@ -301,15 +302,12 @@ public static class Actions
 
         [JsonProperty("opt", NullValueHandling = NullValueHandling.Ignore)]
         public Dictionary<string, bool> Options { get; set; }
-
-        public async static Task<Responses.UpdateRemoteResponse> DeserializeResponse(string jsonData) { return JsonConvert.DeserializeObject<Responses.UpdateRemoteResponse>(jsonData); }
-
     }
     public class OperationsCopyfile : SourceDestinationBase
     {
         public async static Task<Responses.CopyFileResponse> DeserializeResponse(string jsonData) { return JsonConvert.DeserializeObject<Responses.CopyFileResponse>(jsonData); }
 
-        public async Task<Responses.CopyFileResponse> MakeRequest(Client.RcloneClient client)
+        public new async Task<Responses.CopyFileResponse> MakeRequest(Client.RcloneClient client)
         {
             var response = await client.Call(this.GetPath(), JsonConvert.SerializeObject(this));
             return JsonConvert.DeserializeObject<Responses.CopyFileResponse>(response);
@@ -318,44 +316,61 @@ public static class Actions
     }
     public class OperationsMovefile : SourceDestinationBase
     {
-        public async static Task<Responses.MoveFileResponse> DeserializeResponse(string jsonData) { return JsonConvert.DeserializeObject<Responses.MoveFileResponse>(jsonData); }
-
+        public async Task<Responses.MoveFileResponse> MakeRequest(Client.RcloneClient client)
+        {
+            var response = await client.Call(this.GetPath(), GetJson());
+            return JsonConvert.DeserializeObject<Responses.MoveFileResponse>(response);
+        }
     }
     public class OperationsCopyurl : SingleRemoteBase
     {
-
-
         [JsonProperty("url", NullValueHandling = NullValueHandling.Ignore)]
         public string Url { get; set; }
 
         [JsonProperty("autoFilename", NullValueHandling = NullValueHandling.Ignore)]
         public bool AutomaticFilename { get; set; }
-        public async static Task<Responses.CopyUrlResponse> DeserializeResponse(string jsonData) { return JsonConvert.DeserializeObject<Responses.CopyUrlResponse>(jsonData); }
-    }
+        public new async Task<Responses.CopyUrlResponse> MakeRequest(Client.RcloneClient client)
+        {
+            var response = await client.Call(this.GetPath(), GetJson());
+            return JsonConvert.DeserializeObject<Responses.CopyUrlResponse>(response);
+        }    }
     public class OperationsDeletefile : SingleRemoteBase
     {
-        public async static Task<Responses.DeleteFileResponse> DeserializeResponse(string jsonData) { return JsonConvert.DeserializeObject<Responses.DeleteFileResponse>(jsonData); }
-    }
+        public async Task<Responses.DeleteFileResponse> MakeRequest(Client.RcloneClient client)
+        {
+            var response = await client.Call(this.GetPath(), GetJson());
+            return JsonConvert.DeserializeObject<Responses.DeleteFileResponse>(response);
+        }    }
     public class OperationsRmdirs : SingleRemoteBase
     {
         [JsonProperty("leaveRoot")]
         public bool LeaveRoot { get; set; }
 
-        public async static Task<Responses.RemoveDirsResponse> DeserializeResponse(string jsonData) { return JsonConvert.DeserializeObject<Responses.RemoveDirsResponse>(jsonData); }
-    }
+        public new async Task<Responses.Response> MakeRequest(Client.RcloneClient client)
+        {
+            var response = await client.Call(this.GetPath(), GetJson());
+            return JsonConvert.DeserializeObject<Responses.Response>(response);
+        }    }
     public class OperationsList : SingleRemoteBase
     {
         [JsonProperty("opt", NullValueHandling = NullValueHandling.Ignore)]
         public Dictionary<string, string> ListOptions { get; set; }
 
-        public async static Task<Responses.ListResponse> DeserializeResponse(string jsonData) { return JsonConvert.DeserializeObject<Responses.ListResponse>(jsonData); }
-    }
+        public new async Task<Responses.ListResponse> MakeRequest(Client.RcloneClient client)
+        {
+            var response = await client.Call(this.GetPath(), GetJson());
+            return JsonConvert.DeserializeObject<Responses.ListResponse>(response);
 
+        }
+    }
     public class OperationsMkdir : SingleRemoteBase
     {
-        public async static Task<Responses.CreateDirResponse> DeserializeResponse(string jsonData) { return JsonConvert.DeserializeObject<Responses.CreateDirResponse>(jsonData); }
+        public new async Task<Responses.CreateDirResponse> MakeRequest(Client.RcloneClient client)
+        {
+            var response = await client.Call(this.GetPath(), GetJson());
+            return JsonConvert.DeserializeObject<Responses.CreateDirResponse>(response);
+        }    
     }
-
     public class SyncSync : CallBase
     {
         [JsonProperty("_async")] 
@@ -369,29 +384,31 @@ public static class Actions
 
         [JsonProperty("createEmptySrcDirs")]
         public bool SyncEmptyDirectories { get; set; }
-
-        public async static Task<Responses.SyncResponse> DeserializeResponse(string jsonData) { return JsonConvert.DeserializeObject<Responses.SyncResponse>(jsonData); }
-
-        public async Task<Responses.AsyncResponse> MakeAsyncRequest(Client.RcloneClient client)
+        
+        public new async Task<Responses.AsyncResponse> MakeAsyncRequest(Client.RcloneClient client)
         {
             var response = await client.Call(this.GetPath(), JsonConvert.SerializeObject(this));
             return JsonConvert.DeserializeObject<Responses.AsyncResponse>(response);
         }
         
-        public async Task<Responses.SyncResponse> MakeRequest(Client.RcloneClient client)
+        public new async Task<Responses.SyncResponse> MakeRequest(Client.RcloneClient client)
         {
             var response = await client.Call(this.GetPath(), JsonConvert.SerializeObject(this));
             return JsonConvert.DeserializeObject<Responses.SyncResponse>(response);
         }
         
     }
-        
-
+    
     public class SyncMove : SyncSync
     {
         [JsonProperty("deleteEmptySrcDirs")]
         public bool DeleteEmptySourceDirectories { get; set; }
-        public async static Task<Responses.Response> DeserializeResponse(string jsonData) { return JsonConvert.DeserializeObject<Responses.MoveResponse>(jsonData); }
+        public new async Task<Responses.MoveResponse> MakeRequest(Client.RcloneClient client)
+        {
+            var response = await client.Call(this.GetPath(), GetJson());
+            return JsonConvert.DeserializeObject<Responses.MoveResponse>(response);
+        }
+        
     }
 
     public class ActionParams

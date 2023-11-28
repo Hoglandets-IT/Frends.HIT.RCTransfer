@@ -77,7 +77,7 @@ public static class Client
         public async Task<string> Call(string Endpoint, string Data)
         {
             var fullUrl = Url + Endpoint;
-
+            
             if (Data == null)
             {
                 Data = "{}";
@@ -91,14 +91,23 @@ public static class Client
             .AllowAnyHttpStatus()
             .PostStringAsync(Data)
             .ReceiveString();
-
+            
+            // Console.Write(responseString);
             // TODO: Catch 404 errors and prettify
             try
             {
                 var x = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseString);
                 if ((string)x["error"] != "")
                 {
-                    throw new InvalidProgramException("ERROR: " + x["error"]);
+                    var errorData = "Error: " + x["error"] + "\n";
+                    errorData += "Endpoint: " + Endpoint + "\n";
+
+                    if (!Endpoint.StartsWith("/config"))
+                    {
+                        errorData += "Call Data: " + Data;    
+                    }
+                    
+                    throw new InvalidProgramException(errorData);
                 }
             }
             catch (InvalidProgramException EX)

@@ -1,6 +1,9 @@
+using System.Runtime.Serialization.Formatters.Binary;
+using Newtonsoft.Json;
+
 namespace Frends.HIT.RCTransfer;
 
-public class Helpers
+internal class Helpers
 {
     public static async Task<Responses.ListRemoteResponse> ListRemotes(Client.RcloneClient client)
     {
@@ -82,7 +85,7 @@ public class Helpers
             call = new Actions.ConfigCreate()
             {
                 Name = server.Name,
-                Type = server.ConnectionType,
+                Type = server.ConnectionType.ToLower(),
                 Parameters = server.GetRemoteParams()
             };
         }
@@ -96,6 +99,31 @@ public class Helpers
         }
 
         await call.MakeRequest(client);
+    }
+
+    public static object DeepCopy(object input)
+    {
+        Type obType = input.GetType();
+        var serialized = JsonConvert.SerializeObject(input);
+        
+        return JsonConvert.DeserializeObject(serialized, obType);
+    }
+
+    public static object StripPasswords(object input)
+    {
+        var dco = DeepCopy(input);
+        Type obType = input.GetType();
+            
+        foreach (var prop in obType.GetProperties())
+        {
+            string prnl = prop.Name.ToLower();
+            if (prnl.Contains("pass") || prnl.Contains("key"))
+            {
+                prop.SetValue(dco, "");
+            }
+        }
+
+        return dco;
     }
 
    
