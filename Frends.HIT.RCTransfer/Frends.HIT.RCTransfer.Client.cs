@@ -19,12 +19,16 @@ public static class Client
         /// </summary>
         /// <value>https://rclone.example.com</value>
         [Display(Name = "Rclone REST URL")]
+        [DisplayFormat(DataFormatString = "Expression")]
+        [DefaultValue("#env.RCLONE.HOST")]
         public string RestUrl { get; set; }
 
         /// <summary>
         /// Username for the RClone API
         /// </summary>
         /// <value></value>
+        [DisplayFormat(DataFormatString = "Expression")]
+        [DefaultValue("#env.RCLONE.USER")]
         [Display(Name = "Username")]
         public string Username { get; set; }
 
@@ -33,6 +37,8 @@ public static class Client
         /// </summary>
         /// <value></value>
         [Display(Name = "Password")]
+        [DisplayFormat(DataFormatString = "Expression")]
+        [DefaultValue("#env.RCLONE.PASSWORD")]
         public string Password { get; set; }
 
         /// <summary>

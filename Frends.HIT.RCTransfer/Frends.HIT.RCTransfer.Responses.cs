@@ -164,7 +164,7 @@ public static class Responses {
     public class ListResponse : Response
     {
         [JsonProperty("list")]
-        public ListItem[] Items { get; set; }
+        public ListItem[] List { get; set; }
     }
     public class CreateDirResponse : Response {}
 

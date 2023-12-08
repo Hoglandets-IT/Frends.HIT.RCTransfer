@@ -184,6 +184,75 @@ public static class FrendsInterface
         
     }
     
+    /// <summary>
+    /// Synchronizes in the same way as SyncFolders, but also removes the source files when copied
+    /// 
+    /// </summary>
+    /// <param name="config"></param>
+    /// <param name="input"></param>
+    /// <param name="connectionSettings"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public static async Task<Responses.SyncResponse> SyncMoveFolders( RemoteFSInterface.RemoteFsTransferInput config, 
+       RemoteFSInterface.SyncMoveFolderInput input, Client.ConnectionSettings connectionSettings)
+    {
+        var rcli = new Client.RcloneClient(connectionSettings);
+        var errorLogger = new ErrorLogger();
+
+        try
+        {
+            var source = config.GetSource();
+            var destination = config.GetDestination();
+
+            errorLogger.SourceServer = (RemoteFSInterface.RemoteFSServer)Helpers.StripPasswords(source);
+            errorLogger.DestinationServer = (RemoteFSInterface.RemoteFSServer)Helpers.StripPasswords(destination);
+            
+            await Helpers.UpsertRemoteFSRemote(rcli, source);
+            await Helpers.UpsertRemoteFSRemote(rcli, destination);
+        
+            var fmtSource = source.GetFormattedPath(input.SourcePath, true);
+            var fmtDestination = destination.GetFormattedPath(input.DestinationPath, true);
+
+            errorLogger.SourcePath = fmtSource;
+            errorLogger.DestinationPath = fmtDestination;
+            
+            Actions.SyncMove syncReq = new Actions.SyncMove()
+            {
+                Async = true,
+                SourceRemoteString = fmtSource.Remote,
+                DestinationRemoteString = fmtDestination.Remote,
+                SyncEmptyDirectories = input.CreateEmptyDirectories,
+                DeleteEmptySourceDirectories = input.DeleteEmptySourceDirectories
+            };
+
+            var asyncReq = await syncReq.MakeAsyncRequest(rcli);
+            await Task.Delay(2000);
+
+            Responses.JobStatusResponse jobStatus = await rcli.GetJobStatus(asyncReq);
+            while (jobStatus.Finished == false)
+            {
+                await Task.Delay(5000);
+                jobStatus = await rcli.GetJobStatus(asyncReq);
+            }
+
+            Responses.SyncResponse resp = new Responses.SyncResponse()
+            {
+                JobStatus = jobStatus
+            };
+
+            resp.Statistics = await rcli.GetCallStats(asyncReq.JobId);
+        
+            return resp;
+        }
+        catch (Exception er)
+        {
+            errorLogger.ErrorMessage = er.Message;
+            throw new Exception(JsonConvert.SerializeObject(errorLogger));
+        }
+        
+        
+    }
+    
 
     public static async Task<Responses.Response> RunCommand([PropertyTab] Actions.ActionParams parameters,
         [PropertyTab] Client.ConnectionSettings connectionSettings

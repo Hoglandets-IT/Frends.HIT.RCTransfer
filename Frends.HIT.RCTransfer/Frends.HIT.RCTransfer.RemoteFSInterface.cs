@@ -232,6 +232,15 @@ public class RemoteFSInterface
         public bool CreateEmptyDirectories { get; set; }
     }
 
+    public class SyncMoveFolderInput
+    {
+        public bool Async { get; set; }
+        public string SourcePath { get; set; }
+        public string DestinationPath { get; set; }
+        public bool CreateEmptyDirectories { get; set; }
+        public bool DeleteEmptySourceDirectories { get; set; }
+    }
+
     public class ListInput
     {
         public string Path { get; set; }
