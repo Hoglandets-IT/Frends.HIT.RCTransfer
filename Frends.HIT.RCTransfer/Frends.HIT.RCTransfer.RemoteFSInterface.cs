@@ -13,7 +13,7 @@ public class RemoteFSInterface
         public string Name {
             get
             {
-                return Strings.Join(new string[] { ConnectionType, Address, Username }, "-").Replace(".", "_").ToLower();
+                return Strings.Join(new string[] { ConnectionType, Address, Username }, "-").Replace(".", "_").Replace(":", "").ToLower();
             }
             set {}
         }
