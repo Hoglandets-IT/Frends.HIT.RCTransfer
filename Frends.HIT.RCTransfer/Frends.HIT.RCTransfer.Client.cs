@@ -122,7 +122,7 @@ public static class Client
             }
             catch { }
 
-            Console.Write(responseString);
+            // Console.Write(responseString);
             return responseString;
         }
 
