@@ -98,7 +98,6 @@ public static class Client
             .PostStringAsync(Data)
             .ReceiveString();
             
-            // Console.Write(responseString);
             // TODO: Catch 404 errors and prettify
             try
             {
@@ -122,7 +121,6 @@ public static class Client
             }
             catch { }
 
-            // Console.Write(responseString);
             return responseString;
         }
 

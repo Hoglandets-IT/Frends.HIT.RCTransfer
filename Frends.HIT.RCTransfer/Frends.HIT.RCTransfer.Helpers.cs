@@ -80,7 +80,7 @@ internal class Helpers
 
         Actions.CallBase call;
         
-        if (!allRemotes.Remotes.Contains(server.Name))
+        if (allRemotes.Remotes == null || !allRemotes.Remotes.Contains(server.Name))
         {
             call = new Actions.ConfigCreate()
             {
